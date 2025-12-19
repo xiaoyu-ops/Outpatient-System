@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <div class="card-header">收入与人次统计</div>
+  <div class="card-body">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>科室</th>
+          <th>收入</th>
+          <th>人次</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.stat_date }}</td>
+          <td>{{ row.dept_name }}</td>
+          <td>{{ row.revenue }}</td>
+          <td>{{ row.visits }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">暂无数据</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
