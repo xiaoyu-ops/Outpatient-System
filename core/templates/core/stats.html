@@ -1,30 +1,36 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <div class="card">
-  <div class="card-header">收入与人次统计</div>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-bar-chart-fill me-2"></i>门诊收入与人次统计</span>
+    <button class="btn btn-sm btn-outline-primary" onclick="window.print()">打印报表</button>
+  </div>
   <div class="card-body">
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>日期</th>
-          <th>科室</th>
-          <th>收入</th>
-          <th>人次</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-        <tr>
-          <td>{{ row.stat_date }}</td>
-          <td>{{ row.dept_name }}</td>
-          <td>{{ row.revenue }}</td>
-          <td>{{ row.visits }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="4">暂无数据</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>统计日期</th>
+              <th>科室名称</th>
+              <th class="text-end">总收入 (元)</th>
+              <th class="text-end">就诊人次</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr>
+              <td>{{ row.stat_date|date:"Y-m-d" }}</td>
+              <td><span class="badge bg-info text-dark">{{ row.dept_name }}</span></td>
+              <td class="text-end fw-bold text-success">¥ {{ row.revenue }}</td>
+              <td class="text-end">{{ row.visits }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">暂无统计数据</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+    </div>
   </div>
 </div>
 {% endblock %}

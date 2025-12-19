@@ -100,6 +100,7 @@ class Appointment(models.Model):
         COMPLETED = 'COMPLETED', 'Completed'
         CANCELLED = 'CANCELLED', 'Cancelled'
         NO_SHOW = 'NO_SHOW', 'No Show'
+        PAID = 'PAID', 'Paid'
 
     patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name='appointments')
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name='appointments')

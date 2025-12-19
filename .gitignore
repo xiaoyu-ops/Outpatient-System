@@ -1,0 +1,25 @@
+.env
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# IDE
+.vscode/
+.idea/
+
+# Django artifacts
+*.log
+*.sqlite3
+db.sqlite3
+.pytest_cache/
+.mypy_cache/
+staticfiles/
+
+# OS
+.DS_Store
+Thumbs.db

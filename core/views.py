@@ -31,21 +31,26 @@ def appointment_booking(request):
                     },
                 )
                 schedule = Schedule.objects.select_for_update().get(pk=form.cleaned_data['schedule'].pk)
+
+                if schedule.status == Schedule.Status.CLOSED:
+                    return HttpResponseBadRequest('该排班已关闭。')
+
                 booked = schedule.appointments.filter(status=Appointment.Status.BOOKED).count()
-                if booked >= schedule.capacity:
-                    return HttpResponseBadRequest('Schedule is full')
+                if booked >= schedule.capacity or schedule.status == Schedule.Status.FULL:
+                    return HttpResponseBadRequest('该排班已满。')
+
                 appointment, created = Appointment.objects.get_or_create(
                     patient=patient,
                     schedule=schedule,
                     defaults={'status': Appointment.Status.BOOKED},
                 )
                 if not created:
-                    message = 'Already booked for this slot.'
+                    message = '该患者已预约此时段。'
                 else:
                     if booked + 1 >= schedule.capacity:
                         schedule.status = Schedule.Status.FULL
                         schedule.save(update_fields=['status'])
-                    message = 'Appointment created.'
+                    message = '预约成功。'
     else:
         form = AppointmentForm()
     return render(request, 'core/appointment_booking.html', {'form': form, 'message': message})
@@ -58,10 +63,10 @@ def check_in(request):
         if form.is_valid():
             with transaction.atomic():
                 appointment = Appointment.objects.select_for_update().select_related('schedule__doctor').get(
-                    pk=form.cleaned_data['appointment_id']
+                    pk=form.cleaned_data['appointment'].pk
                 )
                 if appointment.status != Appointment.Status.BOOKED:
-                    return HttpResponseBadRequest('Appointment is not in BOOKED status')
+                    return HttpResponseBadRequest('该预约不在待登记状态。')
                 appointment.status = Appointment.Status.COMPLETED
                 appointment.check_in_time = timezone.now()
                 appointment.assigned_room = form.cleaned_data.get('assigned_room') or appointment.schedule.room_no
@@ -71,7 +76,7 @@ def check_in(request):
                     appointment=appointment,
                     defaults={'doctor': appointment.schedule.doctor},
                 )
-                message = 'Check-in completed and medical record created.'
+                message = '登记完成，已生成就诊记录。'
     else:
         form = CheckInForm()
     return render(request, 'core/check_in.html', {'form': form, 'message': message})
@@ -86,6 +91,8 @@ def billing(request):
                 medical_record = MedicalRecord.objects.select_for_update().select_related('appointment').get(
                     pk=form.cleaned_data['medical_record_id']
                 )
+                if medical_record.appointment.status != Appointment.Status.COMPLETED:
+                    return HttpResponseBadRequest('该预约尚未完成就诊，无法结算。')
                 billing_obj, created = Billing.objects.select_for_update().get_or_create(
                     medical_record=medical_record,
                     defaults={
@@ -99,7 +106,7 @@ def billing(request):
                 )
                 if not created:
                     if billing_obj.status == Billing.Status.PAID:
-                        return HttpResponseBadRequest('Billing already marked as paid.')
+                        return HttpResponseBadRequest('该记录已结算，无需重复支付。')
                     billing_obj.total_amount = form.cleaned_data['total_amount']
                     billing_obj.insurance_amount = form.cleaned_data['insurance_amount']
                     billing_obj.self_pay_amount = form.cleaned_data['self_pay_amount']
@@ -107,7 +114,9 @@ def billing(request):
                     billing_obj.status = Billing.Status.PAID
                     billing_obj.paid_at = timezone.now()
                     billing_obj.save()
-                message = 'Billing completed, patient can leave.'
+                medical_record.appointment.status = Appointment.Status.PAID
+                medical_record.appointment.save(update_fields=['status'])
+                message = '结算完成，患者可离院。'
     else:
         form = BillingForm()
     return render(request, 'core/billing.html', {'form': form, 'message': message})

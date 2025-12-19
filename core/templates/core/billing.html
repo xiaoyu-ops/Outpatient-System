@@ -1,13 +1,72 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<div class="card">
-  <div class="card-header">缴费结算</div>
-  <div class="card-body">
-    <form method="post" novalidate>
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button class="btn btn-warning" type="submit">完成结算</button>
-    </form>
-  </div>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <i class="bi bi-receipt me-2"></i>门诊缴费结算
+            </div>
+            <div class="card-body p-4">
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row mb-4 align-items-end">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">就诊记录 ID</label>
+                            <input type="number" name="medical_record_id" class="form-control form-control-lg" placeholder="扫描或输入就诊单号" required>
+                            <div class="form-text">请输入医生开具的就诊记录编号</div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted mb-3">费用明细</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">{{ form.total_amount.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        {{ form.total_amount }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-primary">{{ form.insurance_amount.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        {{ form.insurance_amount }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-danger">{{ form.self_pay_amount.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        {{ form.self_pay_amount }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">{{ form.payment_method.label }}</label>
+                        {{ form.payment_method }}
+                    </div>
+
+                    <div class="d-grid">
+                        <button class="btn btn-warning btn-lg text-dark" type="submit">
+                            <i class="bi bi-coin me-2"></i>确认收费并离院
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
