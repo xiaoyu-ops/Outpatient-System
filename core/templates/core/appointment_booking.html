@@ -8,6 +8,18 @@
                 <i class="bi bi-calendar2-plus me-2"></i>门诊预约挂号
             </div>
             <div class="card-body p-4">
+                {% if message %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <strong>{{ message }}</strong>
+                    {% if appointment_id %}
+                    <hr>
+                    <p class="mb-0">请记住您的预约单号，到诊登记时需要使用：<span class="badge bg-success fs-6">{{ appointment_id }}</span></p>
+                    {% endif %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
                 {% if form.errors %}
                 <div class="alert alert-danger">
                     <strong>提交失败：</strong> 请检查下方红字提示的错误。

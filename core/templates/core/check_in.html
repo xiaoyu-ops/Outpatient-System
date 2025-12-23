@@ -8,6 +8,18 @@
                 <i class="bi bi-person-check-fill me-2"></i>患者到诊报到
             </div>
             <div class="card-body p-5">
+                {% if message %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <strong>{{ message }}</strong>
+                    {% if medical_record_id %}
+                    <hr>
+                    <p class="mb-0">请记住就诊单号，结算时需要使用：<span class="badge bg-success fs-6">{{ medical_record_id }}</span></p>
+                    {% endif %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
                 <p class="text-muted mb-4">请输入预约编号，或扫描患者身份证/输入手机号进行查找。</p>
                 
                 {% if form.errors %}

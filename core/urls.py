@@ -6,4 +6,5 @@ urlpatterns = [
     path('check-in/', views.check_in, name='check_in'),
     path('billing/', views.billing, name='billing'),
     path('stats/', views.stats_view, name='stats'),
+    path('api/medical-record-info/', views.get_medical_record_info, name='get_medical_record_info'),
 ]

@@ -8,6 +8,14 @@
                 <i class="bi bi-receipt me-2"></i>门诊缴费结算
             </div>
             <div class="card-body p-4">
+                {% if message %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <strong>{{ message }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
                 {% if form.errors %}
                 <div class="alert alert-danger">
                     {{ form.non_field_errors }}
@@ -18,10 +26,40 @@
                     {% csrf_token %}
                     
                     <div class="row mb-4 align-items-end">
-                        <div class="col-md-12">
+                        <div class="col-md-10">
                             <label class="form-label fw-bold">就诊记录 ID</label>
-                            <input type="number" name="medical_record_id" class="form-control form-control-lg" placeholder="扫描或输入就诊单号" required>
+                            <input type="number" name="medical_record_id" id="medical_record_id" class="form-control form-control-lg" placeholder="扫描或输入就诊单号" required>
                             <div class="form-text">请输入医生开具的就诊记录编号</div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-info w-100" id="queryBtn">
+                                <i class="bi bi-search me-1"></i>查询
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 患者信息显示区域 -->
+                    <div id="patientInfo" class="card border-info mb-4" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <i class="bi bi-person-badge me-2"></i>患者信息
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>姓名：</strong><span id="patientName"></span></p>
+                                    <p><strong>身份证：</strong><span id="patientIdCard"></span></p>
+                                    <p><strong>医保类型：</strong><span id="insuranceType"></span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>科室：</strong><span id="department"></span></p>
+                                    <p><strong>医生：</strong><span id="doctor"></span></p>
+                                    <p><strong>就诊时间：</strong><span id="visitTime"></span></p>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <p><strong>诊断：</strong><span id="diagnosis"></span></p>
+                                <p><strong>处方：</strong><span id="prescription"></span></p>
+                            </div>
                         </div>
                     </div>
 
@@ -69,4 +107,86 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const queryBtn = document.getElementById('queryBtn');
+    const recordIdInput = document.getElementById('medical_record_id');
+    const patientInfoDiv = document.getElementById('patientInfo');
+    
+    // 查询按钮点击事件
+    queryBtn.addEventListener('click', function() {
+        const recordId = recordIdInput.value;
+        if (!recordId) {
+            alert('请输入就诊记录ID');
+            return;
+        }
+        
+        // 显示加载中
+        queryBtn.disabled = true;
+        queryBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>查询中...';
+        
+        // 发送AJAX请求
+        fetch(`/api/medical-record-info/?record_id=${recordId}`)
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data received:', data);
+                if (data.error) {
+                    if (data.already_paid) {
+                        alert(`该记录已于 ${data.billing_info.paid_at} 结算完成\n总费用：¥${data.billing_info.total_amount}\n医保报销：¥${data.billing_info.insurance_amount}\n个人支付：¥${data.billing_info.self_pay_amount}`);
+                    } else {
+                        alert(data.error);
+                    }
+                    patientInfoDiv.style.display = 'none';
+                } else if (data.success) {
+                    // 显示患者信息
+                    document.getElementById('patientName').textContent = data.patient_name;
+                    document.getElementById('patientIdCard').textContent = data.id_card;
+                    document.getElementById('insuranceType').textContent = data.insurance_type;
+                    document.getElementById('department').textContent = data.department;
+                    document.getElementById('doctor').textContent = data.doctor;
+                    document.getElementById('visitTime').textContent = data.visit_time;
+                    document.getElementById('diagnosis').textContent = data.diagnosis;
+                    document.getElementById('prescription').textContent = data.prescription;
+                    
+                    // 填充建议金额
+                    document.querySelector('input[name="total_amount"]').value = data.suggested_total;
+                    document.querySelector('input[name="insurance_amount"]').value = data.suggested_insurance;
+                    document.querySelector('input[name="self_pay_amount"]').value = data.suggested_self_pay;
+                    
+                    patientInfoDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('查询失败：' + error.message + '\n请检查就诊单号是否正确，或查看浏览器控制台了解详细错误信息');
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                queryBtn.disabled = false;
+                queryBtn.innerHTML = '<i class="bi bi-search me-1"></i>查询';
+            });
+    });
+    
+    // 自动计算自付金额
+    const totalInput = document.querySelector('input[name="total_amount"]');
+    const insuranceInput = document.querySelector('input[name="insurance_amount"]');
+    const selfPayInput = document.querySelector('input[name="self_pay_amount"]');
+    
+    function updateSelfPay() {
+        const total = parseFloat(totalInput.value) || 0;
+        const insurance = parseFloat(insuranceInput.value) || 0;
+        selfPayInput.value = (total - insurance).toFixed(2);
+    }
+    
+    totalInput.addEventListener('input', updateSelfPay);
+    insuranceInput.addEventListener('input', updateSelfPay);
+});
+</script>
 {% endblock %}
