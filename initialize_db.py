@@ -1,4 +1,5 @@
 import mysql.connector
+import sys
 
 # 数据库连接配置
 db_config = {
@@ -8,10 +9,10 @@ db_config = {
     'database': 'clinic',
 }
 
-# SQL 表定义
-sql_statements = [
+# SQL 操作
+sql_create_tables = [
     """
-    CREATE TABLE Department (
+    CREATE TABLE IF NOT EXISTS Department (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) UNIQUE NOT NULL,
         code VARCHAR(255) UNIQUE NOT NULL,
@@ -20,7 +21,7 @@ sql_statements = [
     );
     """,
     """
-    CREATE TABLE Doctor (
+    CREATE TABLE IF NOT EXISTS Doctor (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         name VARCHAR(255) NOT NULL,
@@ -32,7 +33,7 @@ sql_statements = [
     );
     """,
     """
-    CREATE TABLE Patient (
+    CREATE TABLE IF NOT EXISTS Patient (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         id_card VARCHAR(255) UNIQUE NOT NULL,
@@ -44,7 +45,7 @@ sql_statements = [
     );
     """,
     """
-    CREATE TABLE Schedule (
+    CREATE TABLE IF NOT EXISTS Schedule (
         id INT AUTO_INCREMENT PRIMARY KEY,
         doctor_id INT NOT NULL,
         date DATE NOT NULL,
@@ -56,7 +57,7 @@ sql_statements = [
     );
     """,
     """
-    CREATE TABLE Appointment (
+    CREATE TABLE IF NOT EXISTS Appointment (
         id INT AUTO_INCREMENT PRIMARY KEY,
         patient_id INT NOT NULL,
         schedule_id INT NOT NULL,
@@ -69,7 +70,7 @@ sql_statements = [
     );
     """,
     """
-    CREATE TABLE MedicalRecord (
+    CREATE TABLE IF NOT EXISTS MedicalRecord (
         id INT AUTO_INCREMENT PRIMARY KEY,
         appointment_id INT NOT NULL,
         doctor_id INT NOT NULL,
@@ -82,7 +83,7 @@ sql_statements = [
     );
     """,
     """
-    CREATE TABLE Billing (
+    CREATE TABLE IF NOT EXISTS Billing (
         id INT AUTO_INCREMENT PRIMARY KEY,
         medical_record_id INT NOT NULL,
         total_amount DECIMAL(10, 2) NOT NULL,
@@ -96,16 +97,33 @@ sql_statements = [
     """
 ]
 
+sql_drop_tables = [
+    "DROP TABLE IF EXISTS Billing;",
+    "DROP TABLE IF EXISTS MedicalRecord;",
+    "DROP TABLE IF EXISTS Appointment;",
+    "DROP TABLE IF EXISTS Schedule;",
+    "DROP TABLE IF EXISTS Patient;",
+    "DROP TABLE IF EXISTS Doctor;",
+    "DROP TABLE IF EXISTS Department;",
+]
+
+sql_insert_data = [
+    "INSERT INTO Department (name, code, location, is_active) VALUES ('内科', 'NK', '一楼', TRUE);",
+    "INSERT INTO Department (name, code, location, is_active) VALUES ('外科', 'WK', '二楼', TRUE);",
+    
+]
+
+sql_query_data = "SELECT * FROM Department;"
+
 # 执行 SQL 脚本
-def initialize_database():
+def execute_sql(statements):
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor()
-        for statement in sql_statements:
+        for statement in statements:
             cursor.execute(statement)
             print(f"Executed: {statement.strip().splitlines()[0]}...")
         connection.commit()
-        print("Database initialized successfully.")
     except mysql.connector.Error as err:
         print(f"Error: {err}")
     finally:
@@ -113,5 +131,37 @@ def initialize_database():
             cursor.close()
             connection.close()
 
+# 查询数据
+def query_data(statement):
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        cursor.execute(statement)
+        results = cursor.fetchall()
+        for row in results:
+            print(row)
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+# 主函数
 if __name__ == "__main__":
-    initialize_database()
+    if len(sys.argv) < 2:
+        print("Usage: python initialize_db.py [create|drop|insert|query]")
+        sys.exit(1)
+
+    command = sys.argv[1].lower()
+
+    if command == "create":
+        execute_sql(sql_create_tables)
+    elif command == "drop":
+        execute_sql(sql_drop_tables)
+    elif command == "insert":
+        execute_sql(sql_insert_data)
+    elif command == "query":
+        query_data(sql_query_data)
+    else:
+        print("Invalid command. Use [create|drop|insert|query].")
